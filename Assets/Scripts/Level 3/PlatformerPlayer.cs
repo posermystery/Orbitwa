@@ -5,8 +5,8 @@ using UnityEngine.InputSystem;
 public class PlatformerPlayer : MonoBehaviour
 {
     [Header("Movement")]
-    public float moveSpeed = 5f;
-    public float jumpForce = 12f;
+    public float moveSpeed = 3.5f;
+    public float jumpForce = 8f;
     
     [Header("Ground Detection")]
     public Transform groundCheck;
@@ -33,8 +33,35 @@ public class PlatformerPlayer : MonoBehaviour
     {
         if (isDead) return;
 
-        // Check if grounded
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
+        // Check if grounded (safely and ignoring self)
+        isGrounded = false;
+        int layerMask = groundLayer.value == 0 ? ~0 : groundLayer.value; // If Nothing is selected, use Everything
+
+        if (groundCheck != null)
+        {
+            Collider2D[] colliders = Physics2D.OverlapCircleAll(groundCheck.position, groundCheckRadius, layerMask);
+            foreach (var col in colliders)
+            {
+                if (col.gameObject != gameObject && !col.isTrigger)
+                {
+                    isGrounded = true;
+                    break;
+                }
+            }
+        }
+        else
+        {
+            // Agar player ne groundCheck transform assign nahi kiya hai, toh automatically player ke theek niche check karo
+            RaycastHit2D[] hits = Physics2D.RaycastAll(transform.position, Vector2.down, 1.5f, layerMask);
+            foreach (var hit in hits)
+            {
+                if (hit.collider.gameObject != gameObject && !hit.collider.isTrigger)
+                {
+                    isGrounded = true;
+                    break;
+                }
+            }
+        }
 
         float horizontalInput = 0f;
         bool jumpPressed = false;
@@ -94,7 +121,8 @@ public class PlatformerPlayer : MonoBehaviour
         // Flip Sprite
         if (horizontalInput != 0)
         {
-            transform.localScale = new Vector3(Mathf.Sign(horizontalInput), 1, 1);
+            float originalScaleX = Mathf.Abs(transform.localScale.x);
+            transform.localScale = new Vector3(originalScaleX * Mathf.Sign(horizontalInput), transform.localScale.y, transform.localScale.z);
         }
 
         // Fall out of world death

@@ -8,6 +8,7 @@ TagManager:
   - GoldenOrbit
   - SafePipe
   - DeathGap
+  - DeathTrap
   layers:
   - Default
   - TransparentFX

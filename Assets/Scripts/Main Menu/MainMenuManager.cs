@@ -115,7 +115,20 @@ public class MainMenuManager : MonoBehaviour
     {
         // Loads the highest unlocked level
         int unlockedLevel = PlayerPrefs.GetInt("UnlockedLevel", 1);
-        LoadLevel(unlockedLevel);
+        string sceneName = "Level" + unlockedLevel;
+
+        // Agar scene build me nahi hai (yani aage koi level nahi bacha), toh Level 1 se shuru karo
+        if (Application.CanStreamedLevelBeLoaded(sceneName))
+        {
+            LoadLevel(unlockedLevel);
+        }
+        else
+        {
+            Debug.Log("No more levels! Restarting from Level 1.");
+            PlayerPrefs.SetInt("UnlockedLevel", 1); // Progression reset karna ho toh ye line chalegi
+            PlayerPrefs.Save();
+            LoadLevel(1);
+        }
     }
 
     public void ClickLevelSelect()
