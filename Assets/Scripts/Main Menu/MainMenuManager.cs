@@ -4,9 +4,39 @@ using UnityEngine.UI;
 
 public class MainMenuManager : MonoBehaviour
 {
-    [Header("UI Elements")]
+    [Header("Panels")]
+    public GameObject mainMenuPanel;
+    public GameObject levelSelectPanel;
+    public GameObject settingsPanel;
+    public GameObject gameInfoPanel;
+
+    [Header("Main Menu UI Elements")]
     public Text totalDeathCountText;
     
+    [Header("Settings / Taunt")]
+    public Text settingsTauntText;
+    [TextArea] public string tauntMessage = "Adjust Difficulty? Hah! What did you think this was, a fair game? Deal with it or quit.";
+
+    [Header("Game Info")]
+    public Text gameInfoText;
+    [TextArea] public string customGameInfo = "Created by [Your Name]. A game designed to test your patience and sanity.";
+
+    [Header("Audio (Drag n Drop SFX here)")]
+    public AudioClip clickSound;
+    private AudioSource audioSource;
+
+    [Header("Main Buttons (Drag n Drop here!)")]
+    public Button startButton;
+    public Button levelSelectButton;
+    public Button settingsButton;
+    public Button gameInfoButton;
+    public Button exitButton;
+
+    [Header("Back Buttons (Drag n Drop here!)")]
+    public Button settingsBackButton;
+    public Button levelSelectBackButton;
+    public Button gameInfoBackButton;
+
     [Header("Dynamic Grid Settings")]
     public GameObject levelButtonPrefab; // The button template to spawn
     public Transform levelGridParent;    // The Content object of the Scroll View
@@ -14,49 +44,125 @@ public class MainMenuManager : MonoBehaviour
 
     void Start()
     {
-        // 1. Display total deaths
+        // Setup AudioSource automatically
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+            audioSource.playOnAwake = false;
+        }
+
+        // 1. Show Main Menu by default, hide others
+        BackToMainMenu();
+
+        // Automatically connect all buttons via code so you don't have to!
+        if (startButton != null) { startButton.onClick.AddListener(ClickStartGame); startButton.onClick.AddListener(PlayClickSound); }
+        if (levelSelectButton != null) { levelSelectButton.onClick.AddListener(ClickLevelSelect); levelSelectButton.onClick.AddListener(PlayClickSound); }
+        if (settingsButton != null) { settingsButton.onClick.AddListener(ClickSettings); settingsButton.onClick.AddListener(PlayClickSound); }
+        if (gameInfoButton != null) { gameInfoButton.onClick.AddListener(ClickGameInfo); gameInfoButton.onClick.AddListener(PlayClickSound); }
+        if (exitButton != null) { exitButton.onClick.AddListener(ClickExit); exitButton.onClick.AddListener(PlayClickSound); }
+
+        // Connect Back Buttons
+        if (settingsBackButton != null) { settingsBackButton.onClick.AddListener(BackToMainMenu); settingsBackButton.onClick.AddListener(PlayClickSound); }
+        if (levelSelectBackButton != null) { levelSelectBackButton.onClick.AddListener(BackToMainMenu); levelSelectBackButton.onClick.AddListener(PlayClickSound); }
+        if (gameInfoBackButton != null) { gameInfoBackButton.onClick.AddListener(BackToMainMenu); gameInfoBackButton.onClick.AddListener(PlayClickSound); }
+
+        // 2. Display total deaths
         int deaths = PlayerPrefs.GetInt("DeathCount", 0);
         if (totalDeathCountText != null)
         {
             totalDeathCountText.text = "TOTAL DEATHS: " + deaths;
         }
 
-        // 2. Generate the Level Grid
+        // 3. Generate the Level Grid (Hidden until Level Select is clicked)
+        GenerateLevelGrid();
+    }
+
+    private void GenerateLevelGrid()
+    {
         int unlockedLevel = PlayerPrefs.GetInt("UnlockedLevel", 1);
 
         for (int i = 1; i <= totalLevels; i++)
         {
-            // Spawn a new button from the prefab
             GameObject newBtnObj = Instantiate(levelButtonPrefab, levelGridParent);
-            Button btn = newBtnObj.GetComponent<Button>();
-            
-            // Set the number on the button's text (assuming the Text is a child)
             Text btnText = newBtnObj.GetComponentInChildren<Text>();
-            if (btnText != null)
-            {
-                btnText.text = i.ToString();
-            }
+            
+            if (btnText != null) btnText.text = i.ToString();
 
-            // Check if this level should be unlocked or locked
-            if (i <= unlockedLevel)
+            int levelNum = i; // Capture variable for closure
+            Button btn = newBtnObj.GetComponent<Button>();
+            if (btn != null)
             {
-                btn.interactable = true; // Unlocked
-                
-                // Add the click event via code!
-                int levelIndexToLoad = i; // Store local copy for the button's memory
-                btn.onClick.AddListener(() => LoadLevel(levelIndexToLoad));
-            }
-            else
-            {
-                btn.interactable = false; // Locked
-                if (btnText != null) btnText.text = "🔒"; // Optional: show lock icon
+                if (i <= unlockedLevel)
+                {
+                    btn.interactable = true;
+                    // Assign click event for level load and sound
+                    btn.onClick.AddListener(() => LoadLevel(levelNum));
+                    btn.onClick.AddListener(PlayClickSound);
+                }
+                else
+                {
+                    btn.interactable = false; 
+                    if (btnText != null) btnText.text = "🔒"; 
+                }
             }
         }
     }
 
-    public void LoadLevel(int levelNumber)
+    // --- BUTTON FUNCTIONS ---
+
+    public void ClickStartGame()
     {
-        // Check if level actually exists before crashing
+        // Loads the highest unlocked level
+        int unlockedLevel = PlayerPrefs.GetInt("UnlockedLevel", 1);
+        LoadLevel(unlockedLevel);
+    }
+
+    public void ClickLevelSelect()
+    {
+        mainMenuPanel.SetActive(false);
+        levelSelectPanel.SetActive(true);
+    }
+
+    public void ClickSettings()
+    {
+        mainMenuPanel.SetActive(false);
+        settingsPanel.SetActive(true);
+        if (settingsTauntText != null) settingsTauntText.text = tauntMessage;
+    }
+
+    public void ClickGameInfo()
+    {
+        mainMenuPanel.SetActive(false);
+        gameInfoPanel.SetActive(true);
+        if (gameInfoText != null) gameInfoText.text = customGameInfo;
+    }
+
+    public void ClickExit()
+    {
+        Debug.Log("Exiting Game...");
+        Application.Quit();
+    }
+
+    private void PlayClickSound()
+    {
+        if (clickSound != null && audioSource != null)
+        {
+            audioSource.PlayOneShot(clickSound);
+        }
+    }
+
+    public void BackToMainMenu()
+    {
+        if (levelSelectPanel != null) levelSelectPanel.SetActive(false);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (gameInfoPanel != null) gameInfoPanel.SetActive(false);
+        
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
+    }
+
+    private void LoadLevel(int levelNumber)
+    {
         string sceneName = "Level" + levelNumber;
         if (Application.CanStreamedLevelBeLoaded(sceneName))
         {

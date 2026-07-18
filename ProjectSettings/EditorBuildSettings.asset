@@ -7,6 +7,9 @@ EditorBuildSettings:
   m_Scenes:
   - enabled: 1
     path: Assets/Scenes/MainMenu.unity
+    guid: aac54f3afe533bd4cadd4140d6ea218e
+  - enabled: 1
+    path: Assets/Scenes/LevelScroller.unity
     guid: 4c42f6011973a644da228a392c1a77e7
   - enabled: 1
     path: Assets/Scenes/Level1.unity
