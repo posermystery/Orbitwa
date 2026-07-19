@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Collections;
 
 public class MainMenuManager : MonoBehaviour
 {
@@ -76,6 +77,30 @@ public class MainMenuManager : MonoBehaviour
 
         // 3. Generate the Level Grid (Hidden until Level Select is clicked)
         GenerateLevelGrid();
+
+        // 4. Block input briefly so "tap to restart" from previous scene doesn't bleed through
+        StartCoroutine(BlockInputBriefly());
+    }
+
+    private IEnumerator BlockInputBriefly()
+    {
+        // Add a CanvasGroup to block all raycasts temporarily
+        CanvasGroup cg = null;
+        if (mainMenuPanel != null)
+        {
+            cg = mainMenuPanel.GetComponent<CanvasGroup>();
+            if (cg == null) cg = mainMenuPanel.AddComponent<CanvasGroup>();
+            cg.blocksRaycasts = false; // Disable clicks
+            cg.interactable = false;
+        }
+
+        yield return new WaitForSeconds(0.3f);
+
+        if (cg != null)
+        {
+            cg.blocksRaycasts = true; // Re-enable clicks
+            cg.interactable = true;
+        }
     }
 
     private void GenerateLevelGrid()

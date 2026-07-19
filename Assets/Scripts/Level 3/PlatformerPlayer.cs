@@ -74,39 +74,9 @@ public class PlatformerPlayer : MonoBehaviour
             if (Keyboard.current.spaceKey.wasPressedThisFrame || Keyboard.current.wKey.wasPressedThisFrame) jumpPressed = true;
         }
 
-        // --- MOBILE TOUCH CONTROLS (Invisible Zones) ---
-        if (Touchscreen.current != null)
-        {
-            float screenWidth = Screen.width;
-            float screenHeight = Screen.height;
-
-            foreach (var touch in Touchscreen.current.touches)
-            {
-                var phase = touch.phase.ReadValue();
-                if (phase == UnityEngine.InputSystem.TouchPhase.Began || 
-                    phase == UnityEngine.InputSystem.TouchPhase.Moved || 
-                    phase == UnityEngine.InputSystem.TouchPhase.Stationary)
-                {
-                    Vector2 pos = touch.position.ReadValue();
-                    
-                    // Top 50% = Jump
-                    if (pos.y > screenHeight * 0.5f)
-                    {
-                        if (phase == UnityEngine.InputSystem.TouchPhase.Began) jumpPressed = true;
-                    }
-                    // Bottom Left = Move Left
-                    else if (pos.x < screenWidth * 0.5f)
-                    {
-                        horizontalInput = -1f;
-                    }
-                    // Bottom Right = Move Right
-                    else if (pos.x >= screenWidth * 0.5f)
-                    {
-                        horizontalInput = 1f;
-                    }
-                }
-            }
-        }
+        // --- MOBILE ON-SCREEN BUTTON CONTROLS ---
+        if (TouchButton.touchHorizontal != 0f) horizontalInput = TouchButton.touchHorizontal;
+        if (TouchButton.touchJumpPressed) jumpPressed = true;
 
         // Move Player
         rb.linearVelocity = new Vector2(horizontalInput * moveSpeed, rb.linearVelocity.y);
