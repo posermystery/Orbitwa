@@ -9,6 +9,7 @@ TagManager:
   - SafePipe
   - DeathGap
   - DeathTrap
+  - Obstacle
   layers:
   - Default
   - TransparentFX
