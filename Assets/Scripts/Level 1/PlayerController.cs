@@ -85,6 +85,7 @@ public class PlayerController : MonoBehaviour
             // Check for tap/click to jump using the new Input System
             if (Pointer.current != null && Pointer.current.press.wasPressedThisFrame)
             {
+                if (GameManager.IsPointerOverMenuButton()) return; // Prevent tapping through UI
                 Jump();
             }
         }

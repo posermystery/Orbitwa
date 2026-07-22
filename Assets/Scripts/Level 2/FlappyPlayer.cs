@@ -27,6 +27,8 @@ public class FlappyPlayer : MonoBehaviour
         // Tapping / Clicking makes the bird fly up (New Input System compatible)
         if (UnityEngine.InputSystem.Pointer.current != null && UnityEngine.InputSystem.Pointer.current.press.wasPressedThisFrame)
         {
+            if (GameManager.IsPointerOverMenuButton()) return; // Don't jump if tapping the Menu button
+
             rb.linearVelocity = Vector2.up * jumpForce;
             if (jumpSound != null) audioSource.PlayOneShot(jumpSound, jumpVolume);
         }

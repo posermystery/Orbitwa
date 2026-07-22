@@ -7,6 +7,27 @@ public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
 
+    public static bool IsPointerOverMenuButton()
+    {
+        if (UnityEngine.EventSystems.EventSystem.current == null) return false;
+        if (UnityEngine.InputSystem.Pointer.current == null) return false;
+
+        UnityEngine.EventSystems.PointerEventData eventData = new UnityEngine.EventSystems.PointerEventData(UnityEngine.EventSystems.EventSystem.current);
+        eventData.position = UnityEngine.InputSystem.Pointer.current.position.ReadValue();
+
+        System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult> results = new System.Collections.Generic.List<UnityEngine.EventSystems.RaycastResult>();
+        UnityEngine.EventSystems.EventSystem.current.RaycastAll(eventData, results);
+        
+        foreach (UnityEngine.EventSystems.RaycastResult result in results)
+        {
+            if (result.gameObject.name == "HomeButton" || result.gameObject.name == "Text" || result.gameObject.name == "DynamicHomeCanvas")
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     [Header("UI Elements")]
     public GameObject gameOverPanel;
     public Text deathCounterText;
@@ -219,6 +240,77 @@ public class GameManager : MonoBehaviour
         // Load and display death count permanently
         deathCount = PlayerPrefs.GetInt("DeathCount", 0);
         UpdateDeathUI();
+        
+        // Dynamically spawn the Home button in all levels
+        CreateHomeButton();
+    }
+
+    private void CreateHomeButton()
+    {
+        // Don't spawn the button if we are already in the Main Menu
+        if (SceneManager.GetActiveScene().name == "MainMenu") return;
+
+        // Ensure there is an EventSystem in the scene so UI buttons can actually be clicked!
+        if (UnityEngine.EventSystems.EventSystem.current == null && FindAnyObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
+        {
+            GameObject esObj = new GameObject("DynamicEventSystem");
+            esObj.AddComponent<UnityEngine.EventSystems.EventSystem>();
+            
+            // Add New Input System UI module
+            System.Type inputModuleType = System.Type.GetType("UnityEngine.InputSystem.UI.InputSystemUIInputModule, Unity.InputSystem");
+            if (inputModuleType != null)
+            {
+                esObj.AddComponent(inputModuleType);
+            }
+            else
+            {
+                esObj.AddComponent<UnityEngine.EventSystems.StandaloneInputModule>();
+            }
+        }
+
+        // Create a new canvas just for this button so it's always on top
+        GameObject canvasObj = new GameObject("DynamicHomeCanvas");
+        Canvas canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        canvas.sortingOrder = 9999; // Ensure it is above the game and GameOver panels
+
+        CanvasScaler scaler = canvasObj.AddComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1080, 1920);
+
+        canvasObj.AddComponent<GraphicRaycaster>();
+
+        // Create the Button GameObject
+        GameObject btnObj = new GameObject("HomeButton");
+        btnObj.transform.SetParent(canvasObj.transform, false);
+        
+        RectTransform btnRect = btnObj.AddComponent<RectTransform>();
+        btnRect.anchorMin = new Vector2(1, 1); // Top Right
+        btnRect.anchorMax = new Vector2(1, 1);
+        btnRect.pivot = new Vector2(1, 1);
+        btnRect.anchoredPosition = new Vector2(-50, -50); // Padding from the corner
+        btnRect.sizeDelta = new Vector2(180, 120);
+
+        Image img = btnObj.AddComponent<Image>();
+        img.color = new Color(0.1f, 0.1f, 0.1f, 0.8f); // Dark semi-transparent background
+
+        Button btn = btnObj.AddComponent<Button>();
+        btn.onClick.AddListener(() => { SceneManager.LoadScene("MainMenu"); });
+
+        // Create the Text inside the button
+        GameObject txtObj = new GameObject("Text");
+        txtObj.transform.SetParent(btnObj.transform, false);
+        Text txt = txtObj.AddComponent<Text>();
+        txt.text = "MENU";
+        txt.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        txt.fontSize = 45;
+        txt.alignment = TextAnchor.MiddleCenter;
+        txt.color = Color.white;
+        
+        RectTransform txtRect = txtObj.GetComponent<RectTransform>();
+        txtRect.anchorMin = Vector2.zero;
+        txtRect.anchorMax = Vector2.one;
+        txtRect.sizeDelta = Vector2.zero;
     }
 
     private void Update()
@@ -228,6 +320,9 @@ public class GameManager : MonoBehaviour
         {
             if (Pointer.current != null && Pointer.current.press.wasPressedThisFrame)
             {
+                // Prevent restarting if they clicked the Menu button specifically
+                if (IsPointerOverMenuButton()) return;
+
                 if (isLevelWon)
                 {
                     // Flow shouldn't break! Go directly to the next level.

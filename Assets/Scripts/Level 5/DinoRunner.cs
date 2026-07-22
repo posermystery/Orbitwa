@@ -76,7 +76,10 @@ public class DinoRunner : MonoBehaviour
             jumpPressed = true;
 
         if (Pointer.current != null && Pointer.current.press.wasPressedThisFrame)
+        {
+            if (GameManager.IsPointerOverMenuButton()) return; // Prevent tapping through UI
             jumpPressed = true;
+        }
 
         if (jumpPressed && Time.time - lastJumpTime > jumpCooldown)
         {
